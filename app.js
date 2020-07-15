@@ -1,6 +1,7 @@
 const shell = require('shelljs');
 const Timecode = require('smpte-timecode');
 const yargs = require('yargs');
+const { createWorker } = require('tesseract.js');
 
 const argv = yargs.usage("Usage: $0 -i <input file name>")
   .option("i", { alias: "input",
@@ -10,6 +11,8 @@ const argv = yargs.usage("Usage: $0 -i <input file name>")
   })
   .argv;
 
+const worker = createWorker();
+
 const tmpdir = "WORKTMP";
 const FPS = 30;
 
@@ -18,19 +21,29 @@ const inputFile = argv.i;
 shell.rm('-rf', `${tmpdir}`);
 shell.mkdir(`${tmpdir}`);
 
-wavConvert(inputFile, `${tmpdir}/audio.wav`);
-jpgLastFrame(inputFile, `${tmpdir}/last.jpg`);
+(async () => {
+  await worker.load();
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
 
-let audioTC = Timecode(ltcDumpLastTimecode(`${tmpdir}/audio.wav`, FPS, false));
-let videoTC = Timecode(getOCRTimecode(`${tmpdir}/last.jpg`, FPS, false));
+  wavConvert(inputFile, `${tmpdir}/audio.wav`);
+  jpgLastFrame(inputFile, `${tmpdir}/last.jpg`);
+  
+  let audioTC = Timecode(ltcDumpLastTimecode(`${tmpdir}/audio.wav`, FPS, false));
 
-// console.log("Audio timecode in frames: "+audioTC.frameCount);
-// console.log("Video timecode in frames: "+videoTC.frameCount);
+  let videoTCString = await getOCRTimecode(`${tmpdir}/last.jpg`, FPS, false);
+  let videoTC = Timecode(videoTCString);
+  
+  // console.log("Audio timecode in frames: "+audioTC.frameCount);
+  // console.log("Video timecode in frames: "+videoTC.frameCount);
+  
+  let delayFrames = audioTC.frameCount - videoTC.frameCount;
+  let delayMS = delayFrames * (1000/FPS);
+  
+  console.log(`Audio needs delay: ${delayFrames} frames, ${delayMS}ms`);  
 
-let delayFrames = audioTC.frameCount - videoTC.frameCount;
-let delayMS = delayFrames * (1000/FPS);
-
-console.log(`Audio needs delay: ${delayFrames} frames, ${delayMS}ms`);
+  await worker.terminate();
+})();
 
 
 function ltcDumpLastTimecode(wavname) {
@@ -57,7 +70,21 @@ function wavConvert(vidname, wavname) {
   return;
 }
 
-function getOCRTimecode(imgname) {
+async function getOCRTimecode(imgname) {
+  const { data: { text } } = await worker.recognize(imgname);
+
+  console.log(`OCR timecode of ${imgname} is ${text}`);
+
+  let tc = text.match(/\d\d:\d\d:\d\d:\d\d/);
+
+  if (tc) {
+    return tc[0];
+  } else {
+    return 'XX:XX:XX:XX';
+  }
+}
+
+function getOCRTimecodeExternal(imgname) {
   let result = shell.exec(`tesseract \"${imgname}\" stdout`, {silent: true})
     .grep(/\d\d:\d\d:\d\d:\d\d/)
     .sed(/.*(\d\d:\d\d:\d\d:\d\d).*/, '$1')
