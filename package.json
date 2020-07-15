@@ -1,0 +1,15 @@
+{
+  "name": "ltc-sync",
+  "version": "1.0.0",
+  "description": "Compute A/V sync using LTC",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "James Kao",
+  "dependencies": {
+    "shelljs": "^0.8.4",
+    "smpte-timecode": "^1.2.3",
+    "yargs": "^15.4.1"
+  }
+}
