@@ -34,7 +34,7 @@ console.log(`Audio needs delay: ${delayFrames} frames, ${delayMS}ms`);
 
 
 function ltcDumpLastTimecode(wavname) {
-  let result = shell.exec(`ltcdump ${wavname}`, {silent: true})
+  let result = shell.exec(`ltcdump \"${wavname}\"`, {silent: true})
     .grep(/\d\d:\d\d:\d\d:\d\d/)
     .sed(/.*(\d\d:\d\d:\d\d:\d\d).*/, '$1')
     .tail({'-n': 1})
@@ -46,19 +46,19 @@ function ltcDumpLastTimecode(wavname) {
 }
 
 function jpgLastFrame(vidname, outname) {
-  let result = shell.exec(`ffmpeg -y -sseof -3 -i ${vidname} -update 1 -q:v 1 ${outname}`, {silent: true});
+  let result = shell.exec(`ffmpeg -y -sseof -3 -i \"${vidname}\" -update 1 -q:v 1 \"${outname}\"`, {silent: true});
 
   return;
 }
 
 function wavConvert(vidname, wavname) {
-  let result = shell.exec(`ffmpeg -y -i ${vidname} ${wavname}`, {silent: true});
+  let result = shell.exec(`ffmpeg -y -i \"${vidname}\" \"${wavname}\"`, {silent: true});
 
   return;
 }
 
 function getOCRTimecode(imgname) {
-  let result = shell.exec(`tesseract ${imgname} stdout`, {silent: true})
+  let result = shell.exec(`tesseract \"${imgname}\" stdout`, {silent: true})
     .grep(/\d\d:\d\d:\d\d:\d\d/)
     .sed(/.*(\d\d:\d\d:\d\d:\d\d).*/, '$1')
     .stdout.trim();
