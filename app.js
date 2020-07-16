@@ -40,13 +40,13 @@ shell.mkdir(`${tmpdir}`);
   tcTable = await ocrScreenshotsToLTC(tcTable);
 
   printStats(tcTable);
-  
+
   await worker.terminate();
 })();
 
 function printStats(tcTable) {
 
-  let skipped = 0, sum = 0, count = 0, min = Number.MAX_VALUE, max = 0;
+  let skipped = 0, sum = 0, count = 0, min = Number.POSITIVE_INFINITY, max = Number.NEGATIVE_INFINITY;
 
   for (s of tcTable) {
     if (!s.ocr_tc) {
